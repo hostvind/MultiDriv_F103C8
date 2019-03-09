@@ -18,6 +18,11 @@ typedef enum {
     STATE_OFF,
     STATE_ON,
 } SN_STATE;
+typedef enum {
+    SN_HYG,
+    SN_RIN,
+    SN_GAS
+} SN_TYPE;
 typedef struct {
     GPIO_TypeDef* SENS_PortA;
     uint16_t SENS_PinA;
@@ -26,6 +31,7 @@ typedef struct {
     uint16_t SENS_PinD;
     volatile uint32_t* val;
     volatile SN_STATE State;
+    SN_TYPE Type;
 } SENS_driver;
 //typedef struct {
 //    GPIO_TypeDef* GAS_PortA;

@@ -36,7 +36,7 @@
 #include "stm32f1xx_it.h"
 
 /* USER CODE BEGIN 0 */
-
+#include "ULN2003_SM.h"
 #include "Alerts.h"
 
 //alert structs
@@ -61,6 +61,9 @@ static volatile uint8_t uart_cnt;
 //DHT22 playground
 extern volatile uint8_t DHT22_cnt;
 extern volatile uint8_t DHT22_buf [50];
+
+//ULN2003_SM
+extern SM_driver SM;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -287,9 +290,21 @@ void TIM3_IRQHandler(void)
   /* USER CODE END TIM3_IRQn 0 */
   HAL_TIM_IRQHandler(&htim3);
   /* USER CODE BEGIN TIM3_IRQn 1 */
-    HAL_GPIO_TogglePin (LD2.LED_Port, LD2.LED_Pin);
-                        stopwatch = (HAL_GetTick()-lastTick);
-                        lastTick = HAL_GetTick();
+//    HAL_GPIO_TogglePin (LD2.LED_Port, LD2.LED_Pin);
+//      stopwatch = (HAL_GetTick()-lastTick);
+//      lastTick = HAL_GetTick();
+    if (!SM.time)
+    {
+        HAL_TIM_OC_Stop_IT (&htim3, TIM_CHANNEL_1);
+        SM.SM_Port->ODR = (SM.SM_Port->ODR&0x0FFF);
+    }
+    else
+    {
+        HAL_GPIO_TogglePin (LD2.LED_Port, LD2.LED_Pin);
+        SM.SM_Port->ODR = (SM.SM_Port->ODR&0x0FFF)|SM.coils[SM.step];
+        if (++SM.step > 7) SM.step = 0;
+        SM.time--;
+    }
   /* USER CODE END TIM3_IRQn 1 */
 }
 

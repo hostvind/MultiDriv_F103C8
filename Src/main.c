@@ -45,6 +45,7 @@
 #include "string.h"
 #include "bmp180.h"
 #include "AD_sensors.h"
+#include "ULN2003_SM.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -63,6 +64,8 @@ UART_HandleTypeDef huart1;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 uint32_t ADC_BUF[3];
+uint32_t SENS_val[3];
+uint16_t freq;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -106,17 +109,9 @@ volatile uint8_t DHT22_buf [50];
 volatile uint8_t DHT22_cnt;
 
 SENS_driver HYG, RIN, GAS;
+SM_driver SM;
 
-//void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
-//{
-//    uint32_t val[3];
-//    if (hadc->Instance == ADC1)
-//    {
-//        val[0] = ADC_BUF[0];
-//        val[1] = ADC_BUF[1];
-//        val[2] = ADC_BUF[2];
-//    }
-//}
+
 /* USER CODE END 0 */
 
 /**
@@ -148,13 +143,28 @@ int main(void)
     HYG.SENS_PortD=HYG_DO_GPIO_Port; HYG.SENS_PinD=HYG_DO_Pin;
     HYG.SENS_PortA=HYG_AO_GPIO_Port; HYG.SENS_PinA=HYG_AO_Pin;
     HYG.val = &ADC_BUF[0];
+    HYG.Type = SN_HYG;
     
 	RIN.hadc=&hadc1;
     RIN.SENS_PortD=RIN_DO_GPIO_Port; RIN.SENS_PinD=RIN_DO_Pin;
     RIN.SENS_PortA=RIN_AO_GPIO_Port; RIN.SENS_PinA=RIN_AO_Pin;
     RIN.val = &ADC_BUF[1];
+    RIN.Type = SN_RIN;
     
+	GAS.hadc=&hadc1;
+    GAS.SENS_PortD=GAS_DO_GPIO_Port; GAS.SENS_PinD=GAS_DO_Pin;
+    GAS.SENS_PortA=GAS_AO_GPIO_Port; GAS.SENS_PinA=GAS_AO_Pin;
+    GAS.val = &ADC_BUF[2];
+    GAS.Type = SN_GAS;
     
+    SM.SM_Port = GPIOB;
+    SM.step=0;
+    SM.time=0;
+    SM.period=0;
+    SM.direction=CLOCKWISE;
+    SM.htim = &htim3;
+    
+    freq=440;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -174,7 +184,7 @@ int main(void)
   MX_TIM3_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-//  bmp180_Init(&dataBMP);
+  bmp180_Init(&dataBMP);
   stopwatch = 0;
     HAL_TIM_OC_Start_IT (&htim4, TIM_CHANNEL_1);   //enable buzz timer
     HAL_TIM_OC_Start_IT (&htim4, TIM_CHANNEL_2);   //enable blink timer
@@ -194,40 +204,9 @@ int main(void)
 //    BUZZ (1);   //REPORT FOR DUTY!
     
 // enable ADC
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t*) ADC_BUF, 2);
-//    HAL_ADC_Start_IT (&hadc1);
-    /*CHECK ON*/
-
-//    if  ( (HAL_I2C_IsDeviceReady (&hi2c1, BMP_READ_ADDR, 10, 100) == HAL_OK) && (HAL_I2C_IsDeviceReady (&hi2c1, BMP_WRITE_ADDR, 10, 100) == HAL_OK))
-//    {
-//        calculate_TPA(&dataBMP);
-//        sprintf(uart_str_p, "BMP180 says: T=%3.1f, P=%3.0f, A=%3.2f\n",dataBMP.temp /10,dataBMP.pressure, dataBMP.altitude);
-//        BUZZ (1);
-//    }
-//    else
-//        sprintf(uart_str_p, "BMP180 is out\n");        
-//    HAL_UART_Transmit(&huart1, uart_str, strlen(uart_str_p), 100);
-    
-    
-//    /*DHT22 playground*/
-//    HAL_TIM_OC_Start_IT (&htim3, TIM_CHANNEL_1);
-    
-//    i=100;
-//    while (!stopwatch && i--)
-//        HAL_Delay (50);
-//    sprintf(uart_str_p, "\nBlink period is %u\n",stopwatch);
-//    HAL_UART_Transmit(&huart1, uart_str, strlen(uart_str_p), 100);
-    
-//    DHT22_cnt = 0;
-//    DHT22_buf [49]='\n';
-//    HAL_Delay (2000);
-//    HAL_GPIO_WritePin (GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-//    HAL_GPIO_WritePin (GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-//    HAL_Delay (100);
-//    HAL_GPIO_WritePin (GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-//    HAL_Delay (18);
-//    HAL_GPIO_WritePin (GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-//    i=50;
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*) ADC_BUF, 3);
+//    HAL_ADC_Start_IT (&hadc1);    
+    ULN2003_go (&SM, 50, 1, CLOCKWISE);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -238,18 +217,54 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-//    if (DHT22_cnt && i)
-//    {
-//        sprintf(uart_str_p, "%d, ",DHT22_cnt);
-//        HAL_UART_Transmit(&huart1, uart_str, strlen(uart_str_p), 100);
-//        DHT22_cnt=0;
-//        i--;
-//    }
+
 //    HAL_ADC_Start_IT (&hadc1);
+    SENS_val[0]=Sensor_Get_Data(&HYG);
+    SENS_val[1]=Sensor_Get_Data(&RIN);
+    SENS_val[2]=Sensor_Get_Data(&GAS);
     HAL_GPIO_WritePin (LD4.LED_Port, LD4.LED_Pin, (GPIOA->IDR&0x08)>>3);
+      if (RIN.State == STATE_ON)
+      {
+            ULN2003_go (&SM, 50, (110-SENS_val[1])/4, CLOCKWISE);
+      }
+      else
+          ULN2003_stop (&SM);
+      if (GAS.State == STATE_ON)
+      {
+          Alarm_On(freq);
+          if (!(flags&0x20))
+          {
+            freq -=20;
+            if (freq<240)
+                    flags |=0x20;
+          }
+          else
+          {
+              freq+=20;
+              if (freq>860)
+                  flags &= ~(0x20);
+          }
+      }
+      else
+      {
+          Alarm_Off();
+          freq=440;
+      }
+      
     if (flags & 0x01)
     {
-        sprintf(uart_str_p, "HYG says: %02u",Sensor_Get_Data(&HYG));
+        //BMP180 - Temperature, Pressure, Altitude
+        if  ( (HAL_I2C_IsDeviceReady (&hi2c1, BMP_READ_ADDR, 10, 100) == HAL_OK) && (HAL_I2C_IsDeviceReady (&hi2c1, BMP_WRITE_ADDR, 10, 100) == HAL_OK))
+        {
+            calculate_TPA(&dataBMP);
+            sprintf(uart_str_p, "\nBMP180 says: T=%3.1f, P=%3.0f, A=%3.2f\n",dataBMP.temp /10,dataBMP.pressure, dataBMP.altitude);
+        }
+        else
+            sprintf(uart_str_p, "\nBMP180 is out\n");        
+        HAL_UART_Transmit(&huart1, uart_str, strlen(uart_str_p), 100);
+    
+        //WET and GAS sensors
+        sprintf(uart_str_p, "HYG says: %02u",SENS_val[0]);
         HAL_UART_Transmit(&huart1, uart_str, strlen(uart_str_p), 100);
         if (HYG.State==STATE_ON)
             sprintf(uart_str_p, ", WET\n");
@@ -257,12 +272,20 @@ int main(void)
             sprintf(uart_str_p, ", DRY\n");
         HAL_UART_Transmit(&huart1, uart_str, strlen(uart_str_p), 100);
         
-        sprintf(uart_str_p, "RIN says: %02u",Sensor_Get_Data(&RIN));
+        sprintf(uart_str_p, "RIN says: %02u",SENS_val[1]);
         HAL_UART_Transmit(&huart1, uart_str, strlen(uart_str_p), 100);
         if (RIN.State==STATE_ON)
             sprintf(uart_str_p, ", WET\n");
         else
             sprintf(uart_str_p, ", DRY\n");
+        HAL_UART_Transmit(&huart1, uart_str, strlen(uart_str_p), 100);
+        
+        sprintf(uart_str_p, "GAS says: %02u",SENS_val[2]);
+        HAL_UART_Transmit(&huart1, uart_str, strlen(uart_str_p), 100);
+        if (GAS.State==STATE_ON)
+            sprintf(uart_str_p, ", I_CHOKE\n");
+        else
+            sprintf(uart_str_p, ", BREATHE\n");
         HAL_UART_Transmit(&huart1, uart_str, strlen(uart_str_p), 100);
         
         sprintf(uart_str_p, "ADC BUF = %04u, %04u, %04u\n",ADC_BUF[0],ADC_BUF[1],ADC_BUF[2]);
@@ -346,7 +369,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 2;
+  hadc1.Init.NbrOfConversion = 3;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -366,6 +389,15 @@ static void MX_ADC1_Init(void)
     */
   sConfig.Channel = ADC_CHANNEL_4;
   sConfig.Rank = ADC_REGULAR_RANK_2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure Regular Channel 
+    */
+  sConfig.Channel = ADC_CHANNEL_6;
+  sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -459,11 +491,11 @@ static void MX_TIM3_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 7;
+  htim3.Init.Prescaler = 7999;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 20000;
+  htim3.Init.Period = 20;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_OC_Init(&htim3) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -477,7 +509,7 @@ static void MX_TIM3_Init(void)
   }
 
   sConfigOC.OCMode = TIM_OCMODE_TIMING;
-  sConfigOC.Pulse = 20000;
+  sConfigOC.Pulse = 20;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -590,13 +622,14 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, SM_A_Pin|SM_B_Pin|SM_C_Pin|SM_D_Pin 
+                          |LED1_Pin|LED2_Pin|LED3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LED1_Pin|LED2_Pin|LED3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : HYG_DO_Pin RIN_DO_Pin */
-  GPIO_InitStruct.Pin = HYG_DO_Pin|RIN_DO_Pin;
+  /*Configure GPIO pins : HYG_DO_Pin RIN_DO_Pin GAS_DO_Pin */
+  GPIO_InitStruct.Pin = HYG_DO_Pin|RIN_DO_Pin|GAS_DO_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -613,17 +646,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(DHT22_INT_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : SM_A_Pin SM_B_Pin SM_C_Pin SM_D_Pin 
+                           LED1_Pin LED2_Pin LED3_Pin */
+  GPIO_InitStruct.Pin = SM_A_Pin|SM_B_Pin|SM_C_Pin|SM_D_Pin 
+                          |LED1_Pin|LED2_Pin|LED3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /*Configure GPIO pin : LED0_Pin */
   GPIO_InitStruct.Pin = LED0_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED0_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : LED1_Pin LED2_Pin LED3_Pin */
-  GPIO_InitStruct.Pin = LED1_Pin|LED2_Pin|LED3_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);

@@ -169,6 +169,7 @@ float get_temperature(bmp_data_t * bmp)
 
 bmp_data_t* calculate_TPA(bmp_data_t * bmp)
 {
+    
     //NOTE: unsigned vars mess all up
     int32_t X1, X2, B5;
     float T;
@@ -206,7 +207,7 @@ bmp->temp = T;
 bmp->pressure = P;
     
     float A;
-    A = 44330 * (1.0 - pow(P / 101325, 0.1903));
+    A = 44330 * (1.0 - pow((P / 101325), 0.1903));
 bmp->altitude = A;
     return bmp;
 }

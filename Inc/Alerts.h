@@ -41,6 +41,7 @@ typedef struct {
     volatile STATE State;
     MODE Mode;    
 } BUZ_driver;
-
+void Alarm_On (uint16_t frequency);
+void Alarm_Off (void);
 void BUZZ (uint8_t time_x100ms);
 void BLINK (uint8_t time_x100ms, uint8_t led, MODE mode);
