@@ -46,6 +46,7 @@
 #include "bmp180.h"
 #include "AD_sensors.h"
 #include "ULN2003_SM.h"
+#include "lcd_i2c.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -66,6 +67,8 @@ UART_HandleTypeDef huart1;
 uint32_t ADC_BUF[3];
 uint32_t SENS_val[3];
 uint16_t freq;
+uint8_t str0[40];
+uint8_t str1[40];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -110,7 +113,7 @@ volatile uint8_t DHT22_cnt;
 
 SENS_driver HYG, RIN, GAS;
 SM_driver SM;
-
+LCDDriver LCD;
 
 /* USER CODE END 0 */
 
@@ -163,7 +166,6 @@ int main(void)
     SM.period=0;
     SM.direction=CLOCKWISE;
     SM.htim = &htim3;
-    
     freq=440;
   /* USER CODE END Init */
 
@@ -191,7 +193,7 @@ int main(void)
     
 //    for (i=0; i<0xFF;i++)
 //        {
-//            if  (HAL_I2C_IsDeviceReady (&hi2c1, i, 10, 100) == HAL_OK)
+//            if  (HAL_I2C_IsDeviceReady (&hi2c2, i, 10, 100) == HAL_OK)
 //            {   
 //                sprintf(uart_str_p, "Reply on 0x%02x\n",i);        
 //                HAL_UART_Transmit(&huart1, uart_str, strlen(uart_str_p), 100);
@@ -207,6 +209,10 @@ int main(void)
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*) ADC_BUF, 3);
 //    HAL_ADC_Start_IT (&hadc1);    
     ULN2003_go (&SM, 50, 1, CLOCKWISE);
+    
+    lcdStart (&LCD, &hi2c2, 0x7E);
+//    lcdPutString (&LCD, "0123456789ABCDEF");
+//    lcdWriteStringXY(&LCD,"TY-PIDOR",0,1); 
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -222,7 +228,12 @@ int main(void)
     SENS_val[0]=Sensor_Get_Data(&HYG);
     SENS_val[1]=Sensor_Get_Data(&RIN);
     SENS_val[2]=Sensor_Get_Data(&GAS);
-    HAL_GPIO_WritePin (LD4.LED_Port, LD4.LED_Pin, (GPIOA->IDR&0x08)>>3);
+      calculate_TPA(&dataBMP);
+      sprintf (str0, "T: %3.1f P:%6.0f", dataBMP.temp /10,dataBMP.pressure);
+      sprintf (str1, "H: %02u%c R:%02u%cG:%02u", SENS_val[0],0x20|HYG.State,SENS_val[1],0x20|RIN.State,SENS_val[2]);
+      lcdPutString (&LCD, str0);
+      lcdWriteStringXY(&LCD,str1,0,1); 
+//    HAL_GPIO_WritePin (LD4.LED_Port, LD4.LED_Pin, (GPIOA->IDR&0x08)>>3);
       if (RIN.State == STATE_ON)
       {
             ULN2003_go (&SM, 50, (110-SENS_val[1])/4, CLOCKWISE);

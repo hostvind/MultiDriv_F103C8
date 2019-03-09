@@ -440,6 +440,11 @@
               <FileType>5</FileType>
               <FilePath>..\Inc\ULN2003_SM.h</FilePath>
             </File>
+            <File>
+              <FileName>lcd_i2c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\lcd_i2c.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
