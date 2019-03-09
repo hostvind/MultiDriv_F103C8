@@ -49,6 +49,20 @@
 
 /* Private define ------------------------------------------------------------*/
 
+#define HYG_AO_Pin GPIO_PIN_1
+#define HYG_AO_GPIO_Port GPIOA
+#define HYG_DO_Pin GPIO_PIN_2
+#define HYG_DO_GPIO_Port GPIOA
+#define BTN_Pin GPIO_PIN_3
+#define BTN_GPIO_Port GPIOA
+#define BTN_EXTI_IRQn EXTI3_IRQn
+#define RIN_AO_Pin GPIO_PIN_4
+#define RIN_AO_GPIO_Port GPIOA
+#define RIN_DO_Pin GPIO_PIN_5
+#define RIN_DO_GPIO_Port GPIOA
+#define DHT22_INT_Pin GPIO_PIN_0
+#define DHT22_INT_GPIO_Port GPIOB
+#define DHT22_INT_EXTI_IRQn EXTI0_IRQn
 #define LED0_Pin GPIO_PIN_15
 #define LED0_GPIO_Port GPIOA
 #define LED1_Pin GPIO_PIN_3

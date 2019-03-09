@@ -52,13 +52,21 @@ extern TIM_HandleTypeDef htim2;
 extern uint8_t IRQ1_counter, IRQ2_counter;
 static uint8_t i;
 static uint32_t lastTick;
+extern volatile uint32_t stopwatch;
+//0=EXTI3_Button_Update
+extern volatile uint8_t flags;
 //UART input
 extern char * uart_in_p;
 static volatile uint8_t uart_cnt;
-extern volatile uint32_t stopwatch;
+//DHT22 playground
+extern volatile uint8_t DHT22_cnt;
+extern volatile uint8_t DHT22_buf [50];
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern DMA_HandleTypeDef hdma_adc1;
+extern ADC_HandleTypeDef hadc1;
+extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 extern UART_HandleTypeDef huart1;
 
@@ -213,6 +221,79 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
+* @brief This function handles EXTI line0 interrupt.
+*/
+void EXTI0_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI0_IRQn 0 */
+
+  /* USER CODE END EXTI0_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+  /* USER CODE BEGIN EXTI0_IRQn 1 */
+HAL_TIM_OC_Stop_IT (&htim3, TIM_CHANNEL_1);
+    DHT22_cnt++;
+  /* USER CODE END EXTI0_IRQn 1 */
+}
+
+/**
+* @brief This function handles EXTI line3 interrupt.
+*/
+void EXTI3_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI3_IRQn 0 */
+
+  /* USER CODE END EXTI3_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
+  /* USER CODE BEGIN EXTI3_IRQn 1 */
+    flags |= 0x01;
+  /* USER CODE END EXTI3_IRQn 1 */
+}
+
+/**
+* @brief This function handles DMA1 channel1 global interrupt.
+*/
+void DMA1_Channel1_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel1_IRQn 0 */
+
+  /* USER CODE END DMA1_Channel1_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_adc1);
+  /* USER CODE BEGIN DMA1_Channel1_IRQn 1 */
+
+  /* USER CODE END DMA1_Channel1_IRQn 1 */
+}
+
+/**
+* @brief This function handles ADC1 and ADC2 global interrupts.
+*/
+void ADC1_2_IRQHandler(void)
+{
+  /* USER CODE BEGIN ADC1_2_IRQn 0 */
+
+  /* USER CODE END ADC1_2_IRQn 0 */
+  HAL_ADC_IRQHandler(&hadc1);
+  /* USER CODE BEGIN ADC1_2_IRQn 1 */
+
+  /* USER CODE END ADC1_2_IRQn 1 */
+}
+
+/**
+* @brief This function handles TIM3 global interrupt.
+*/
+void TIM3_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM3_IRQn 0 */
+
+  /* USER CODE END TIM3_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim3);
+  /* USER CODE BEGIN TIM3_IRQn 1 */
+    HAL_GPIO_TogglePin (LD2.LED_Port, LD2.LED_Pin);
+                        stopwatch = (HAL_GetTick()-lastTick);
+                        lastTick = HAL_GetTick();
+  /* USER CODE END TIM3_IRQn 1 */
+}
+
+/**
 * @brief This function handles TIM4 global interrupt.
 */
 void TIM4_IRQHandler(void)
@@ -267,9 +348,7 @@ void TIM4_IRQHandler(void)
                     else if (LED_p[i]->Mode == PERM)
                     {
                         HAL_GPIO_TogglePin (LED_p[i]->LED_Port, LED_p[i]->LED_Pin);
-                        LED_p[i]->counter = LED_p[i]->timer;                        
-                        stopwatch = (HAL_GetTick()-lastTick);
-                        lastTick = HAL_GetTick();
+                        LED_p[i]->counter = LED_p[i]->timer;
                     }
                 }
             }

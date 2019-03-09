@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32F103xB</Define>
               <Undefine></Undefine>
-              <IncludePath>../Inc;  ../Drivers/STM32F1xx_HAL_Driver/Inc;  ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;  ../Drivers/CMSIS/Device/ST/STM32F1xx/Include;  ../Drivers/CMSIS/Include</IncludePath>
+              <IncludePath>../Inc;            ../Drivers/STM32F1xx_HAL_Driver/Inc;            ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;            ../Drivers/CMSIS/Device/ST/STM32F1xx/Include;            ../Drivers/CMSIS/Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -420,6 +420,16 @@
               <FileType>1</FileType>
               <FilePath>..\Src\bmp180.c</FilePath>
             </File>
+            <File>
+              <FileName>AD_sensors.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\AD_sensors.c</FilePath>
+            </File>
+            <File>
+              <FileName>AD_sensors.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Inc\AD_sensors.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -494,6 +504,16 @@
               <FileName>stm32f1xx_hal_rcc.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_adc_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc_ex.c</FilePath>
             </File>
           </Files>
         </Group>
